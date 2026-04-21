@@ -31,7 +31,7 @@ kgi_project/
 ├── database.py      # 資料庫連線設定
 ├── seed.py          # Demo 假資料初始化
 ├── requirements.txt # 套件清單
-└── templates/       # 前端頁面（5 頁）
+└── templates/       # 前端頁面
     ├── index.html        # 主頁面
     ├── roster.html       # Team Health Roster
     ├── diagnostic.html   # Diagnostic View
