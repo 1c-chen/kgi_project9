@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Intervention Log</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; }
+
+    header {
+      background: #003087;
+      color: #fff;
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header .logo { font-size: 20px; font-weight: 700; }
+    header .page-title { font-size: 15px; opacity: 0.85; }
+
+    .container { max-width: 680px; margin: 40px auto; padding: 0 20px; }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #003087;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .back-link:hover { text-decoration: underline; }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 32px 36px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .card h2 { font-size: 18px; color: #222; margin-bottom: 8px; }
+    .card .desc { font-size: 13px; color: #888; margin-bottom: 28px; line-height: 1.6; }
+
+    .info-box {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 28px;
+      font-size: 13px;
+      color: #5a4000;
+      line-height: 1.6;
+    }
+    .info-box strong { color: #e65100; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 8px;
+    }
+    .char-hint { font-weight: 400; color: #aaa; margin-left: 8px; }
+
+    textarea {
+      width: 100%;
+      height: 160px;
+      padding: 12px 16px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      transition: border 0.2s;
+    }
+    textarea:focus { outline: none; border-color: #003087; }
+    textarea.error { border-color: #e53935; }
+
+    .char-counter {
+      text-align: right;
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 6px;
+      margin-bottom: 24px;
+    }
+    .char-counter.ok { color: #2e7d32; }
+    .char-counter.warn { color: #e53935; }
+
+    .error-msg {
+      color: #e53935;
+      font-size: 13px;
+      margin-top: -18px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: #003087;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .submit-btn:hover { background: #002060; }
+    .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      justify-content: center;
+      align-items: center;
+    }
+    .confirm-overlay.show { display: flex; }
+    .confirm-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 36px 40px;
+      width: 380px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .confirm-box h3 { font-size: 18px; color: #222; margin-bottom: 12px; }
+    .confirm-box p  { font-size: 14px; color: #666; margin-bottom: 28px; line-height: 1.6; }
+    .confirm-actions { display: flex; gap: 12px; }
+    .confirm-actions button {
+      flex: 1; padding: 12px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+    }
+    .btn-cancel { background: #f0f0f0; color: #555; }
+    .btn-confirm { background: #003087; color: #fff; }
+    .btn-confirm:hover { background: #002060; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/diagnostic/{{ data.agent_id }}?manager_id={{ manager_id }}" style="color:#fff; text-decoration:none; font-size:14px; font-weight:600;">← 返回診斷頁</a>
+    <div class="page-title">Intervention Log</div>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>填寫輔導紀錄</h2>
+      <p class="desc">
+        完成線下 1-on-1 輔導後，請在下方填寫本次輔導的重點內容。<br>
+        送出後，員工的模組鎖定將自動解除，恢復學習進度。
+      </p>
+
+      <!-- 員工與模組資訊 -->
+      <div class="info-box">
+        <strong>員工：</strong>{{ data.name }}
+        {% for lock in data.lock_details %}
+          {% if lock.lock_id == lock_id %}
+          　｜　<strong>鎖定模組：</strong>{{ lock.module_id }}
+          　｜　<strong>原因：</strong>
+            {% if lock.lock_reason == 'failed_3x' %}連續失敗 3 次
+            {% else %}7 日均分低於 70%{% endif %}
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <!-- 表單 -->
+      <form id="interventionForm" method="post" action="/intervention/{{ lock_id }}">
+        <input type="hidden" name="manager_id" value="{{ manager_id }}">
+
+        <label>
+          輔導內容
+          <span class="char-hint">（至少 20 字）</span>
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          placeholder="例：與王小明坐下來詳細說明 MOD-001 中 FSC 個資保護條款的實際應用情境，並針對他誤解的部分以案例演練方式重新釐清..."
+          oninput="updateCounter()"
+        ></textarea>
+        <div class="char-counter" id="charCounter">0 / 20 字</div>
+        <div class="error-msg" id="errorMsg">輔導紀錄至少需要 20 個字，請補充說明。</div>
+
+        <button type="button" class="submit-btn" id="submitBtn" onclick="confirmSubmit()">
+          確認送出並簽核解鎖模組
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 確認對話框 -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <h3>確認解鎖</h3>
+      <p>送出後，員工的模組鎖定將立即解除。<br>請確認輔導已完成且紀錄填寫正確。</p>
+      <div class="confirm-actions">
+        <button class="btn-cancel" onclick="closeConfirm()">取消</button>
+        <button class="btn-confirm" onclick="doSubmit()">確認送出</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MIN_CHARS = 20;
+
+    function updateCounter() {
+      const len = document.getElementById("notes").value.trim().length;
+      const counter = document.getElementById("charCounter");
+      counter.textContent = `${len} / ${MIN_CHARS} 字`;
+      if (len >= MIN_CHARS) {
+        counter.className = "char-counter ok";
+        document.getElementById("notes").classList.remove("error");
+        document.getElementById("errorMsg").style.display = "none";
+      } else {
+        counter.className = "char-counter warn";
+      }
+    }
+
+    function confirmSubmit() {
+      const notes = document.getElementById("notes").value.trim();
+      if (notes.length < MIN_CHARS) {
+        document.getElementById("notes").classList.add("error");
+        document.getElementById("errorMsg").style.display = "block";
+        return;
+      }
+      document.getElementById("confirmOverlay").classList.add("show");
+    }
+
+    function closeConfirm() {
+      document.getElementById("confirmOverlay").classList.remove("show");
+    }
+
+    function doSubmit() {
+      document.getElementById("interventionForm").submit();
+    }
+  </script>
+</body>
+</html>

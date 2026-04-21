@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Diagnostic View</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; }
+
+    header {
+      background: #003087;
+      color: #fff;
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header .logo { font-size: 20px; font-weight: 700; }
+    header .page-title { font-size: 15px; opacity: 0.85; }
+
+    .container { max-width: 860px; margin: 40px auto; padding: 0 20px; }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #003087;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .back-link:hover { text-decoration: underline; }
+
+    .agent-header {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .agent-avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: #e53935;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .agent-avatar.amber { background: #f59300; }
+
+    /* Amber 模組卡 */
+    .amber-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      border-left: 5px solid #f59300;
+    }
+    .amber-card h3 {
+      font-size: 16px;
+      color: #f59300;
+      margin-bottom: 16px;
+    }
+    .agent-info h2 { font-size: 20px; color: #222; }
+    .agent-info p  { font-size: 13px; color: #888; margin-top: 4px; }
+
+    .lock-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      border-left: 5px solid #e53935;
+    }
+    .lock-card h3 {
+      font-size: 16px;
+      color: #e53935;
+      margin-bottom: 16px;
+    }
+
+    .info-row { display: flex; gap: 40px; margin-bottom: 20px; }
+    .info-item label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
+    .info-item span  { font-size: 14px; color: #333; font-weight: 600; }
+
+    .reason-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #ffebee;
+      color: #e53935;
+    }
+
+    /* 測驗記錄表格 */
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #888;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #fafafa;
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 12px;
+      color: #888;
+      font-weight: 600;
+    }
+    td { padding: 11px 16px; border-top: 1px solid #f5f5f5; font-size: 14px; }
+
+    .attempt-row { cursor: pointer; }
+    .attempt-row:hover td { background: #fff5f5; }
+
+    .score-fail { color: #e53935; font-weight: 700; }
+
+    .expand-hint { font-size: 12px; color: #aaa; }
+
+    /* 展開的錯題清單 */
+    .detail-row td {
+      background: #fff8f8;
+      padding: 10px 24px 14px;
+    }
+    .wrong-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .wrong-list li {
+      padding: 7px 0;
+      border-bottom: 1px solid #fde8e8;
+      font-size: 13px;
+      color: #c62828;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    .wrong-list li:last-child { border-bottom: none; }
+    .wrong-list li .x-icon { flex-shrink: 0; font-weight: 700; }
+
+    /* 錯題總結 */
+    .summary-box {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-top: 20px;
+    }
+    .summary-box h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e65100;
+      margin-bottom: 12px;
+    }
+    .summary-table { width: 100%; border-collapse: collapse; }
+    .summary-table th {
+      background: transparent;
+      font-size: 11px;
+      color: #bf360c;
+      padding: 6px 10px;
+    }
+    .summary-table td {
+      padding: 8px 10px;
+      border-top: 1px solid #ffe0b2;
+      font-size: 13px;
+      color: #4e2a00;
+    }
+    .count-badge {
+      display: inline-block;
+      background: #e65100;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 20px;
+    }
+
+    /* AI 建議 */
+    .ai-box {
+      background: #f3f6ff;
+      border: 1px solid #d0d9ff;
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: #3a3a6e;
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+    .ai-box strong { display: block; margin-bottom: 6px; color: #003087; }
+
+    .intervene-btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 28px;
+      background: #003087;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .intervene-btn:hover { background: #002060; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/roster/{{ manager_id }}" style="color:#fff; text-decoration:none; font-size:14px; font-weight:600;">← 返回名單</a>
+    <div class="page-title">Diagnostic View</div>
+  </header>
+
+  <div class="container">
+    <!-- 員工資訊 -->
+    <div class="agent-header">
+      <div class="agent-avatar {% if data.status == 'amber' %}amber{% endif %}">{{ data.name[0] }}</div>
+      <div class="agent-info">
+        <h2>{{ data.name }}</h2>
+        <p>員工 ID：{{ data.agent_id }}　｜　狀態：{% if data.status == 'red' %}模組鎖定中，需要主管介入{% else %}需注意{% endif %}</p>
+      </div>
+    </div>
+
+    <!-- 每個鎖定模組（紅色） -->
+    {% for lock in data.lock_details %}
+    <div class="lock-card">
+      <h3>鎖定模組：{{ module_names.get(lock.module_id, lock.module_id) }}</h3>
+
+      <div class="info-row">
+        <div class="info-item">
+          <label>鎖定原因</label>
+          <span>
+            <span class="reason-badge">
+              {% if lock.lock_reason == 'failed_3x' %}連續失敗 3 次
+              {% else %}7 日均分低於 70%{% endif %}
+            </span>
+          </span>
+        </div>
+        <div class="info-item">
+          <label>鎖定時間</label>
+          <span>{{ lock.locked_timestamp }}</span>
+        </div>
+        <div class="info-item">
+          <label>答題筆數</label>
+          <span>{{ lock.attempts | length }} 筆</span>
+        </div>
+      </div>
+
+      <!-- 測驗紀錄（可展開） -->
+      <div class="section-label">測驗紀錄</div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>日期</th>
+            <th>分數</th>
+            <th>結果</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for attempt in lock.attempts %}
+          <tr class="attempt-row" onclick="toggleDetail('d{{ lock.lock_id }}-{{ loop.index }}')">
+            <td>{{ loop.index }}</td>
+            <td>{{ attempt.taken_at }}</td>
+            <td class="{{ 'score-fail' if not attempt.is_passed else '' }}">{{ attempt.score }}</td>
+            <td>{% if attempt.is_passed %}通過{% else %}未通過{% endif %}</td>
+            <td>
+              {% if attempt.wrong_questions %}
+              <span class="expand-hint" id="hint-d{{ lock.lock_id }}-{{ loop.index }}">▼</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% if attempt.wrong_questions %}
+          <tr id="d{{ lock.lock_id }}-{{ loop.index }}" class="detail-row" style="display:none">
+            <td colspan="5">
+              <ul class="wrong-list">
+                {% for q in attempt.wrong_questions %}
+                <li>
+                  <span class="x-icon">Q{{ q.question_number }}</span>
+                  <span>{{ q.content }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- 錯題總結 -->
+      {% if lock.wrong_summary %}
+      <div class="summary-box">
+        <h4>本鎖定週期錯題統計</h4>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>題目內容</th>
+              <th style="text-align:center">答錯次數</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in lock.wrong_summary %}
+            <tr>
+              <td><strong>Q{{ item.question_number }}</strong>　{{ item.content }}</td>
+              <td style="text-align:center">
+                <span class="count-badge">{{ item.count }} 次</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      <!-- AI 回饋 -->
+      <div class="ai-box">
+        <strong>AI 學習建議（Project 2）</strong>
+        {{ lock.ai_feedback }}
+      </div>
+
+      <!-- 介入按鈕 -->
+      <a class="intervene-btn"
+         href="/intervention/{{ lock.lock_id }}?manager_id={{ manager_id }}&agent_id={{ data.agent_id }}">
+        填寫輔導紀錄 →
+      </a>
+    </div>
+    {% endfor %}
+
+    <!-- 每個需注意模組（黃色） -->
+    {% for mod in data.amber_details %}
+    <div class="amber-card">
+      <h3>模組：{{ module_names.get(mod.module_id, mod.module_id) }}</h3>
+
+      <div class="section-label">答題紀錄</div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>日期</th>
+            <th>分數</th>
+            <th>結果</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set mod_idx = loop.index %}
+          {% for attempt in mod.attempts %}
+          <tr class="attempt-row" onclick="toggleDetail('a{{ mod_idx }}-{{ loop.index }}')">
+            <td>{{ loop.index }}</td>
+            <td>{{ attempt.taken_at }}</td>
+            <td class="{{ 'score-fail' if not attempt.is_passed else '' }}">{{ attempt.score }}</td>
+            <td>{% if attempt.is_passed %}通過{% else %}未通過{% endif %}</td>
+            <td>
+              {% if attempt.wrong_questions %}
+              <span class="expand-hint" id="hint-a{{ mod_idx }}-{{ loop.index }}">▼</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% if attempt.wrong_questions %}
+          <tr id="a{{ mod_idx }}-{{ loop.index }}" class="detail-row" style="display:none">
+            <td colspan="5">
+              <ul class="wrong-list">
+                {% for q in attempt.wrong_questions %}
+                <li>
+                  <span class="x-icon">Q{{ q.question_number }}</span>
+                  <span>{{ q.content }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+
+  </div>
+
+  <script>
+    function toggleDetail(id, row) {
+      const detail = document.getElementById(id);
+      const hint   = document.getElementById('hint-' + id);
+      const open   = detail.style.display !== 'none';
+      detail.style.display = open ? 'none' : 'table-row';
+      hint.textContent = hint.textContent.replace(open ? '▲' : '▼', open ? '▼' : '▲');
+    }
+  </script>
+</body>
+</html>

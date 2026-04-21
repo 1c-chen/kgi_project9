@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Team Health Roster</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; }
+
+    header {
+      background: #003087;
+      color: #fff;
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header .logo { font-size: 20px; font-weight: 700; }
+    header .page-title { font-size: 15px; opacity: 0.85; }
+
+    .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+
+    .summary {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .summary-card {
+      flex: 1;
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      text-align: center;
+    }
+    .summary-card .count { font-size: 32px; font-weight: 700; }
+    .summary-card .label { font-size: 13px; color: #888; margin-top: 4px; }
+    .count.red { color: #e53935; }
+    .count.amber { color: #f59300; }
+    .count.green { color: #2e7d32; }
+
+    .table-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+    .table-card h2 {
+      padding: 20px 24px 16px;
+      font-size: 16px;
+      color: #333;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #fafafa;
+      padding: 12px 20px;
+      text-align: left;
+      font-size: 13px;
+      color: #888;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+    th:hover { background: #f0f0f0; }
+    td { padding: 14px 20px; border-top: 1px solid #f5f5f5; font-size: 14px; }
+    tr:hover td { background: #fafcff; }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge.red    { background: #ffebee; color: #e53935; }
+    .badge.amber  { background: #fff8e1; color: #f59300; }
+    .badge.green  { background: #e8f5e9; color: #2e7d32; }
+
+    .badge-label.red   { }
+    .badge-label.amber { }
+    .badge-label.green { }
+
+    .action-btn {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      display: inline-block;
+    }
+    .action-btn.danger { background: #e53935; color: #fff; }
+    .action-btn.danger:hover { background: #c62828; }
+    .action-btn.disabled { background: #eee; color: #aaa; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/" style="color:#fff; text-decoration:none; font-size:14px; font-weight:600;">← 返回首頁</a>
+    <div style="display:flex; align-items:center; gap:20px;">
+      <div class="page-title">Team Health Roster</div>
+      <!-- 通知鈴鐺 -->
+      <div style="position:relative;">
+        <button id="bellBtn" onclick="toggleNotif()" style="
+          background:none; border:none; cursor:pointer; color:#fff;
+          font-size:20px; position:relative; padding:4px 8px;
+        ">🔔
+          {% if notifications %}
+          <span id="notifBadge" style="
+            position:absolute; top:0; right:0;
+            background:#e53935; color:#fff;
+            font-size:10px; font-weight:700;
+            width:16px; height:16px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+          ">{{ notifications | length }}</span>
+          {% endif %}
+        </button>
+
+        <!-- 下拉通知面板 -->
+        <div id="notifPanel" style="
+          display:none; position:absolute; right:0; top:36px;
+          background:#fff; border-radius:10px; width:320px;
+          box-shadow:0 4px 20px rgba(0,0,0,0.18); z-index:999;
+          overflow:hidden;
+        ">
+          <div style="padding:12px 16px; font-size:13px; font-weight:700; color:#333; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center;">
+            未讀通知
+            {% if notifications %}
+            <button onclick="markAllRead()" style="
+              font-size:11px; color:#888; background:none; border:none;
+              cursor:pointer; font-family:inherit;
+            ">全部標記已讀</button>
+            {% endif %}
+          </div>
+          {% if notifications %}
+            {% for n in notifications %}
+            <div style="padding:12px 16px; border-bottom:1px solid #f9f9f9; font-size:13px;">
+              <div style="color:#e53935; font-weight:600;">{{ n.agent_name }} — {{ n.module_id }} 已鎖定</div>
+              <div style="color:#888; font-size:12px; margin-top:3px;">
+                {% if n.lock_reason == 'failed_3x' %}連續失敗 3 次{% else %}7 日均分低於 70%{% endif %}
+                　｜　{{ n.created_at }}
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div style="padding:20px 16px; color:#aaa; font-size:13px; text-align:center;">目前無未讀通知</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- 摘要統計 -->
+    {% set red_count   = team | selectattr('status', 'equalto', 'red')   | list | length %}
+    {% set amber_count = team | selectattr('status', 'equalto', 'amber') | list | length %}
+    {% set green_count = team | selectattr('status', 'equalto', 'green') | list | length %}
+
+    <div class="summary">
+      <div class="summary-card">
+        <div class="count red">{{ red_count }}</div>
+        <div class="label">需要介入（紅）</div>
+      </div>
+      <div class="summary-card">
+        <div class="count amber">{{ amber_count }}</div>
+        <div class="label">需注意（黃）</div>
+      </div>
+      <div class="summary-card">
+        <div class="count green">{{ green_count }}</div>
+        <div class="label">狀態良好（綠）</div>
+      </div>
+    </div>
+
+    <!-- 員工名單 -->
+    <div class="table-card">
+      <h2>直屬部屬名單</h2>
+      <table id="rosterTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)">姓名 ↕</th>
+            <th onclick="sortTable(1)">分部 ↕</th>
+            <th onclick="sortTable(2)">學習狀態 ↕</th>
+            <th>動作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for agent in team %}
+          <tr>
+            <td>{{ agent.name }}</td>
+            <td>{{ agent.branch_code }}</td>
+            <td>
+              {% if agent.status == 'red' %}
+                <span class="badge red">需要介入</span>
+              {% elif agent.status == 'amber' %}
+                <span class="badge amber">需注意</span>
+              {% else %}
+                <span class="badge green">狀態良好</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if agent.status == 'red' %}
+                <a class="action-btn danger"
+                   href="/diagnostic/{{ agent.agent_id }}?manager_id={{ manager_id }}">
+                  查看詳情
+                </a>
+              {% elif agent.status == 'amber' %}
+                <a class="action-btn disabled"
+                   href="/diagnostic/{{ agent.agent_id }}?manager_id={{ manager_id }}"
+                   style="pointer-events:auto; color:#888;">
+                  查看詳情
+                </a>
+              {% else %}
+                <span class="action-btn disabled">查看詳情</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    let sortAsc = true;
+    function sortTable(col) {
+      const table = document.getElementById("rosterTable");
+      const rows = Array.from(table.tBodies[0].rows);
+      rows.sort((a, b) => {
+        const x = a.cells[col].innerText.trim();
+        const y = b.cells[col].innerText.trim();
+        return sortAsc ? x.localeCompare(y, 'zh') : y.localeCompare(x, 'zh');
+      });
+      rows.forEach(r => table.tBodies[0].appendChild(r));
+      sortAsc = !sortAsc;
+    }
+
+    function toggleNotif() {
+      const panel = document.getElementById('notifPanel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function markAllRead() {
+      await fetch('/api/notifications/read/{{ manager_id }}', { method: 'POST' });
+      document.getElementById('notifPanel').style.display = 'none';
+      location.reload();
+    }
+
+    // 點擊面板外關閉
+    document.addEventListener('click', function(e) {
+      const btn = document.getElementById('bellBtn');
+      const panel = document.getElementById('notifPanel');
+      if (panel && !btn.contains(e.target) && !panel.contains(e.target)) {
+        panel.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

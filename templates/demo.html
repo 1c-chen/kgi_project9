@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Demo 控制台</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; }
+
+    header {
+      background: #37474f;
+      color: #fff;
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header .logo { font-size: 20px; font-weight: 700; }
+    header .badge {
+      background: #ff7043;
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #888;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* 模擬答題 */
+    .sim-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 28px 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      margin-bottom: 28px;
+    }
+    .sim-card h2 { font-size: 16px; color: #222; margin-bottom: 6px; }
+    .sim-card p  { font-size: 13px; color: #888; margin-bottom: 24px; }
+
+    .form-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 12px; font-weight: 600; color: #555; }
+    select, input[type=number] {
+      padding: 10px 14px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #fafafa;
+    }
+    select:focus, input[type=number]:focus { outline: none; border-color: #37474f; }
+
+    .submit-btn {
+      padding: 10px 24px;
+      background: #37474f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .submit-btn:hover { background: #263238; }
+
+    .result-box {
+      display: none;
+      margin-top: 20px;
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .result-box.locked   { background: #ffebee; border: 1px solid #ef9a9a; color: #c62828; }
+    .result-box.blocked  { background: #fce4ec; border: 1px solid #f48fb1; color: #880e4f; }
+    .result-box.passed   { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
+    .result-box.failed   { background: #fff8e1; border: 1px solid #ffe082; color: #5a4000; }
+
+    /* 員工狀態總覽 */
+    .status-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .status-card h2 {
+      padding: 18px 24px 14px;
+      font-size: 15px;
+      color: #333;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .refresh-btn {
+      font-size: 12px;
+      color: #888;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+    .refresh-btn:hover { color: #333; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #fafafa;
+      padding: 10px 20px;
+      text-align: left;
+      font-size: 12px;
+      color: #888;
+      font-weight: 600;
+    }
+    td { padding: 12px 20px; border-top: 1px solid #f5f5f5; font-size: 14px; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge.red    { background: #ffebee; color: #e53935; }
+    .badge.amber  { background: #fff8e1; color: #f59300; }
+    .badge.green  { background: #e8f5e9; color: #2e7d32; }
+
+    /* 快速入口 */
+    .links-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .links-card h2 { font-size: 15px; color: #333; margin-bottom: 16px; }
+    .link-list { display: flex; gap: 12px; flex-wrap: wrap; }
+    .portal-link {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 2px solid #003087;
+      color: #003087;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .portal-link:hover { background: #003087; color: #fff; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Demo 控制台</div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="badge">僅供展示使用</div>
+      <button onclick="document.getElementById('resetOverlay').classList.add('show')"
+        style="background:#c62828; color:#fff; border:none; border-radius:6px; padding:6px 16px; font-size:13px; font-weight:600; cursor:pointer;">
+        重置資料庫
+      </button>
+    </div>
+  </header>
+
+  <!-- 重置確認對話框 -->
+  <div class="confirm-overlay" id="resetOverlay">
+    <div class="confirm-box">
+      <h3>確認重置</h3>
+      <p>所有資料將清空並回到初始狀態，此操作無法復原。</p>
+      <div class="confirm-actions">
+        <button class="btn-cancel" onclick="document.getElementById('resetOverlay').classList.remove('show')">取消</button>
+        <button class="btn-confirm" onclick="doReset()">確認重置</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- 模擬答題 -->
+    <div class="section-title">模擬答題</div>
+    <div class="sim-card">
+      <h2>送出一筆答題紀錄</h2>
+      <p>選擇員工、模組與分數，系統將即時評估是否觸發鎖定條件。</p>
+
+      <form id="quizForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>員工</label>
+            <select id="agentSelect">
+              {% for agent in agents %}
+              <option value="{{ agent.user_id }}">{{ agent.name }}（{{ agent.branch_code }}）</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>模組</label>
+            <select id="moduleSelect">
+              <option value="MOD-001">MOD-001 旅遊保險資料共享規範</option>
+              <option value="MOD-002">MOD-002 投資連結型商品法規限制</option>
+              <option value="MOD-003">MOD-003 FSC 個資保護條款</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>分數（0–100）</label>
+            <input type="number" id="scoreInput" value="65" min="0" max="100" style="width: 120px;">
+          </div>
+          <div class="form-group">
+            <label>N 天前作答</label>
+            <input type="number" id="daysAgoInput" value="0" min="0" max="30" style="width: 120px;">
+          </div>
+          <button type="button" class="submit-btn" onclick="addToCart()">＋ 加入清單</button>
+        </div>
+      </form>
+
+      <!-- 待送清單 -->
+      <div id="cartSection" style="display:none; margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:13px; font-weight:700; color:#555;">待送清單</span>
+          <button onclick="clearCart()" style="font-size:12px; color:#e53935; background:none; border:none; cursor:pointer;">全部清除</button>
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead>
+            <tr style="background:#fafafa;">
+              <th style="padding:8px 12px; text-align:left; color:#888; font-weight:600;">員工</th>
+              <th style="padding:8px 12px; text-align:left; color:#888; font-weight:600;">模組</th>
+              <th style="padding:8px 12px; text-align:left; color:#888; font-weight:600;">分數</th>
+              <th style="padding:8px 12px; text-align:left; color:#888; font-weight:600;">作答時間</th>
+              <th style="padding:8px 12px;"></th>
+            </tr>
+          </thead>
+          <tbody id="cartBody"></tbody>
+        </table>
+        <div style="margin-top:14px; text-align:right;">
+          <button class="submit-btn" onclick="submitAll()">全部送出</button>
+        </div>
+      </div>
+
+      <div class="result-box" id="resultBox"></div>
+    </div>
+
+    <!-- 員工狀態總覽 -->
+    <div class="section-title">目前員工狀態</div>
+    <div class="status-card">
+      <h2>
+        所有員工
+        <button class="refresh-btn" onclick="location.reload()">重新整理 ↺</button>
+      </h2>
+      <table>
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>分部</th>
+            <th>狀態</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in status_list %}
+          <tr>
+            <td>{{ row.name }}</td>
+            <td>{{ row.branch_code }}</td>
+            <td>
+              {% if row.status == 'red' %}
+                <span class="badge red">需要介入</span>
+              {% elif row.status == 'amber' %}
+                <span class="badge amber">需注意</span>
+              {% else %}
+                <span class="badge green">狀態良好</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 快速入口 -->
+    <div class="section-title">快速進入 Portal</div>
+    <div class="links-card">
+      <h2>主管 Portal</h2>
+      <div class="link-list">
+        {% for manager in managers %}
+        <a class="portal-link" href="/roster/{{ manager.user_id }}">
+          {{ manager.name }}　{{ manager.branch_code }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <style>
+    .confirm-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); justify-content: center; align-items: center;
+    }
+    .confirm-overlay.show { display: flex; }
+    .confirm-box {
+      background: #fff; border-radius: 12px; padding: 36px 40px;
+      width: 360px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .confirm-box h3 { font-size: 18px; color: #222; margin-bottom: 12px; }
+    .confirm-box p  { font-size: 14px; color: #666; margin-bottom: 28px; line-height: 1.6; }
+    .confirm-actions { display: flex; gap: 12px; }
+    .confirm-actions button {
+      flex: 1; padding: 12px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+    }
+    .btn-cancel  { background: #f0f0f0; color: #555; }
+    .btn-confirm { background: #c62828; color: #fff; }
+  </style>
+
+  <script>
+    async function doReset() {
+      document.getElementById('resetOverlay').classList.remove('show');
+      await fetch('/api/reset', { method: 'POST' });
+      location.reload();
+    }
+
+    let cart = [];
+
+    function addToCart() {
+      const agentSel = document.getElementById("agentSelect");
+      const moduleSel = document.getElementById("moduleSelect");
+      const score   = parseInt(document.getElementById("scoreInput").value);
+      const daysAgo = parseInt(document.getElementById("daysAgoInput").value);
+
+      cart.push({
+        agent_id:   parseInt(agentSel.value),
+        agent_name: agentSel.options[agentSel.selectedIndex].text,
+        module_id:  moduleSel.value,
+        module_name: moduleSel.options[moduleSel.selectedIndex].text,
+        score,
+        days_ago: daysAgo
+      });
+      renderCart();
+    }
+
+    function removeFromCart(i) {
+      cart.splice(i, 1);
+      renderCart();
+    }
+
+    function clearCart() {
+      cart = [];
+      renderCart();
+    }
+
+    function renderCart() {
+      const section = document.getElementById("cartSection");
+      const tbody   = document.getElementById("cartBody");
+      section.style.display = cart.length ? "block" : "none";
+      tbody.innerHTML = cart.map((item, i) => `
+        <tr style="border-top:1px solid #f5f5f5;">
+          <td style="padding:8px 12px;">${item.agent_name}</td>
+          <td style="padding:8px 12px;">${item.module_id}</td>
+          <td style="padding:8px 12px; font-weight:600; color:${item.score < 60 ? '#e53935' : '#333'};">${item.score}</td>
+          <td style="padding:8px 12px; color:#888;">${item.days_ago === 0 ? '今天' : item.days_ago + ' 天前'}</td>
+          <td style="padding:8px 12px;">
+            <button onclick="removeFromCart(${i})" style="color:#e53935; background:none; border:none; cursor:pointer; font-size:13px;">移除</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function submitAll() {
+      if (!cart.length) return;
+      const resultBox = document.getElementById("resultBox");
+
+      const payload = cart.map(({ agent_id, module_id, score, days_ago }) =>
+        ({ agent_id, module_id, score, days_ago })
+      );
+
+      const res  = await fetch("/api/quiz/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const results = await res.json();
+      cart = [];
+      renderCart();
+
+      // 整理結果摘要
+      const locked  = results.filter(r => r.lock_triggered);
+      const blocked = results.filter(r => r.error);
+      const passed  = results.filter(r => !r.error && !r.lock_triggered && r.is_passed);
+      const failed  = results.filter(r => !r.error && !r.lock_triggered && !r.is_passed);
+
+      let html = `<strong>送出 ${results.length} 筆紀錄</strong><br><br>`;
+      if (locked.length) {
+        const reason = locked[0].lock_triggered === "failed_3x" ? "累積失敗 3 次" : "7 日均分低於 70%";
+        html += `🔒 模組鎖定觸發（${reason}）<br>`;
+      }
+      if (blocked.length) html += `⛔ 已鎖定，${blocked.length} 筆被拒絕<br>`;
+      if (passed.length)  html += `✔ 通過 ${passed.length} 筆<br>`;
+      if (failed.length)  html += `✘ 未通過 ${failed.length} 筆（尚未達鎖定條件）<br>`;
+
+      resultBox.style.display = "block";
+      resultBox.className = "result-box " + (locked.length ? "locked" : blocked.length ? "blocked" : passed.length ? "passed" : "failed");
+      resultBox.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
